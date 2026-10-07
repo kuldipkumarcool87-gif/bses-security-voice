@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BSES Hindi Voice Input</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#172033}
+.wrap{max-width:720px;margin:auto;padding:18px}
+.card{background:white;border-radius:16px;padding:20px;box-shadow:0 5px 20px #0002}
+h1{font-size:22px;margin:0 0 6px;color:#0b4d8f}
+.sub{font-size:13px;color:#667085;margin-bottom:18px}
+button{width:100%;border:0;border-radius:12px;padding:15px;font-size:17px;font-weight:700;cursor:pointer;margin:6px 0}
+.mic{background:#0b5aa7;color:#fff}.stop{background:#b42318;color:#fff}
+textarea{width:100%;min-height:150px;box-sizing:border-box;border:1px solid #ccd5e0;border-radius:12px;padding:12px;font-size:17px;margin-top:10px}
+.status{padding:10px;border-radius:10px;background:#eef4ff;margin:10px 0;font-weight:600}
+.small{font-size:12px;color:#667085;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>🎤 हिंदी Voice Input</h1>
+<div class="sub">BSES YAMUNA POWER LIMITED — Security Reporting System</div>
+<div id="status" class="status">माइक शुरू करने के लिए नीचे बटन दबाएँ।</div>
+<button class="mic" onclick="startVoice()">🎤 हिंदी में बोलें</button>
+<button class="stop" onclick="stopVoice()">⏹ बोलना बंद करें</button>
+<textarea id="text" placeholder="आपकी बोली हुई हिंदी यहाँ दिखाई देगी..."></textarea>
+<div class="small">पहली बार browser microphone permission माँगे तो Allow करें।</div>
+</div></div>
+<script>
+let recognition=null;
+async function startVoice(){
+ const status=document.getElementById('status');
+ try{
+   if(!window.isSecureContext){throw new Error('HTTPS_REQUIRED');}
+   if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+     stream.getTracks().forEach(t=>t.stop());
+   }
+   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+   if(!SR){throw new Error('NOT_SUPPORTED');}
+   if(recognition){try{recognition.abort()}catch(e){}}
+   recognition=new SR();
+   recognition.lang='hi-IN';
+   recognition.continuous=true;
+   recognition.interimResults=true;
+   let finalText=document.getElementById('text').value.trim();
+   recognition.onstart=()=>status.textContent='🎤 माइक चालू है — हिंदी में बोलें...';
+   recognition.onresult=(e)=>{
+     let interim='';
+     for(let i=e.resultIndex;i<e.results.length;i++){
+       const t=e.results[i][0].transcript;
+       if(e.results[i].isFinal) finalText+=(finalText?' ':'')+t;
+       else interim+=t;
+     }
+     document.getElementById('text').value=(finalText+(interim?' '+interim:'')).trim();
+   };
+   recognition.onerror=(e)=>{
+     const map={
+       'not-allowed':'Microphone permission नहीं मिली। Site Settings में Microphone Allow करें।',
+       'audio-capture':'Microphone उपलब्ध नहीं है।',
+       'no-speech':'आवाज़ नहीं मिली। फिर से बोलें।',
+       'network':'Voice service network error. Internet check करें।'
+     };
+     status.textContent='❌ '+(map[e.error]||('Voice error: '+e.error));
+   };
+   recognition.onend=()=>{ if(status.textContent.startsWith('🎤')) status.textContent='✓ Voice input बंद हुआ।'; };
+   recognition.start();
+ }catch(e){
+   if(e.message==='HTTPS_REQUIRED') status.textContent='❌ यह page HTTPS पर खोलना जरूरी है।';
+   else if(e.message==='NOT_SUPPORTED') status.textContent='❌ इस browser में Speech Recognition support नहीं है। Android Chrome में खोलें।';
+   else status.textContent='❌ Microphone शुरू नहीं हुआ: '+(e.message||e);
+ }
+}
+function stopVoice(){
+ if(recognition){try{recognition.stop()}catch(e){}}
+ document.getElementById('status').textContent='✓ बोलना बंद किया गया।';
+}
+</script>
+</body>
+</html>
