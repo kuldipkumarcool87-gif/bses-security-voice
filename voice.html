@@ -26,6 +26,7 @@ textarea{width:100%;min-height:150px;box-sizing:border-box;border:1px solid #ccd
 <button class="stop" onclick="stopVoice()">⏹ बोलना बंद करें</button>
 <textarea id="text" placeholder="आपकी बोली हुई हिंदी यहाँ दिखाई देगी..."></textarea>
 <div class="small">पहली बार browser microphone permission माँगे तो Allow करें।</div>
+<button class="mic" id="sendToReport" onclick="sendToReport()">✓ रिपोर्ट में टेक्स्ट भेजें</button>
 </div></div>
 <script>
 let recognition=null;
@@ -71,6 +72,12 @@ async function startVoice(){
    else if(e.message==='NOT_SUPPORTED') status.textContent='❌ इस browser में Speech Recognition support नहीं है। Android Chrome में खोलें।';
    else status.textContent='❌ Microphone शुरू नहीं हुआ: '+(e.message||e);
  }
+}
+function sendToReport(){
+ const t=document.getElementById('text').value.trim();
+ if(!t){document.getElementById('status').textContent='पहले हिंदी में बोलें।';return;}
+ if(window.parent && window.parent!==window){window.parent.postMessage({type:'BSES_HINDI_VOICE_TEXT',text:t},'*');}
+ else {navigator.clipboard&&navigator.clipboard.writeText(t);document.getElementById('status').textContent='Text copied. रिपोर्ट में paste करें।';}
 }
 function stopVoice(){
  if(recognition){try{recognition.stop()}catch(e){}}
